@@ -1213,7 +1213,35 @@ class ApplicationSubcommand:
                     )
                     raise error
 
+            # Cooldowns
+            if not self._cooldowns_can_run(interaction):
+                error = ApplicationCheckFailure(
+                    f"{self.qualified_name} is currently on cooldown."
+                )
+                raise error
+
         return True
+
+    def _cooldowns_can_run(self, interaction: "Interaction"):
+        cooldowns = getattr(self.callback, "_cooldowns")
+        if not cooldowns:
+            return True
+
+        from cooldowns import get_remaining_calls
+
+        if get_remaining_calls(self.callback, interaction):
+            return True
+
+        return False
+
+    def reset_cooldowns(self):
+        cooldowns = getattr(self.callback, "_cooldowns")
+        if not cooldowns:
+            raise ValueError("No cooldowns found.")
+
+        from cooldowns import reset_cooldowns
+
+        reset_cooldowns(self.callback)
 
     async def invoke_slash(self, interaction: Interaction, **kwargs) -> None:
         """|coro|
